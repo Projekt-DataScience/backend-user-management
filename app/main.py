@@ -61,10 +61,10 @@ def login_user(login_data: LoginData):
 
 #Layer abfragen
 @app.get("/layers/") 
-def get_layers():
+def get_layers(authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
-        alllayers = session.query(Layer).all()
-            
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
+        alllayers = session.query(Layer).where(Layer.company_id == cid).all()
         return alllayers
 
 
@@ -116,25 +116,26 @@ class AddGroupData(BaseModel):
 
 #Gruppe hinzufügen
 @app.post("/groups/") 
-def post_layers(group_data: AddGroupData):
+def post_groups(group_data: AddGroupData, authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
         existing_group = session.query(Group).filter(
-                Group.group_data == group_data.group_name
+                Group.group_name == group_data.group_name
             )
         if existing_group.count() > 0:
             return {"result": 0}
         else:
-            new_group = Group(id = None, group_name = group_data.group_name)
+            new_group = Group(id = None, group_name = group_data.group_name, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company"))
             session.add(new_group)
             session.commit()
-            return {"result": 1, "id": new_group.id, "group_name": new_group.group_name} 
+            return {"result": 1, "id": new_group.id, "group_name": new_group.group_name, "company_id": new_group.company_id} 
 
 
 #Alle Gruppen abrufen
 @app.get("/groups/") 
-def get_groups():
+def get_groups(authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
-        allgroups = session.query(Group).all()
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
+        allgroups = session.query(Group).where(Group.company_id == cid).all()
             
         return allgroups
 
