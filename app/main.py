@@ -1,14 +1,15 @@
 import os
 from typing import Union
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Header
 from pydantic import BaseModel
 
 from config import DATABASE_URL
-from auth_handler import sign_jwt, JWTBearer
-from backend_db_lib.models import User, base, Layer
+from auth_handler import sign_jwt, JWTBearer, decode_jwt
+from backend_db_lib.models import User, base, Layer, Group, Role
 from backend_db_lib.manager import DatabaseManager
 import json
+import pandas as pd
 
 dbm = DatabaseManager(base, DATABASE_URL)
 app = FastAPI()
@@ -40,8 +41,8 @@ class LoginDataResponse(BaseModel):
     result: int
     token: Union[str, None]
 
-
-@app.post("/login/")
+#Login
+@app.post("/login/") 
 def login_user(login_data: LoginData):
     with dbm.create_session() as session:
         # todo: add password hashing
@@ -49,22 +50,23 @@ def login_user(login_data: LoginData):
                 User.email == login_data.email
                 and User.generate_hash(login_data.password) == User.password_hash
             )
-    if valid_user.count() > 0:
-        jwt = sign_jwt(valid_user.first().id)
-        return LoginDataResponse(result=1, token=jwt)
-    else:
-        return LoginDataResponse(result=0, token=None)
+        if valid_user.count() > 0:
+            roleasstring = session.query(Role).get(valid_user.first().role_id)
+            jwt = sign_jwt(valid_user.first().id, valid_user.first().company_id, roleasstring.role_name)
+            return LoginDataResponse(result=1, token=jwt)
+        else:
+            return LoginDataResponse(result=0, token=None)
 
+#Logout
 
-@app.get("/layers/")
+#Layer abfragen
+@app.get("/layers/") 
 def get_layers():
     with dbm.create_session() as session:
-        alllayers = session.query(Layer)
-        dictlayers = []
-        for row in alllayers:
-            dictlayers.append(json_encoder_layer(row))
+        alllayers = session.query(Layer).all()
             
-        return dictlayers
+        return alllayers
+
 
 
 def json_encoder_layer(layer):
@@ -81,9 +83,14 @@ class AddLayerData(BaseModel):
                 "layer_number": 0
             }
         }
+#User einem Layer hinzufügen
 
-@app.post("/layers/")
-def post_layers(layer_data: AddLayerData):
+#User einer Gruppe hinzufügen
+
+
+#Layer hinzufügen
+@app.post("/layers/") 
+def post_layers(layer_data: AddLayerData, authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
         existing_layer = session.query(Layer).filter(
                 Layer.layer_name == layer_data.layer_name
@@ -91,8 +98,75 @@ def post_layers(layer_data: AddLayerData):
         if existing_layer.count() > 0:
             return {"result": 0}
         else:
-            new_layer = Layer(id = None, layer_name = layer_data.layer_name, layer_number = layer_data.layer_number, company_id = 1)
+            new_layer = Layer(id = None, layer_name = layer_data.layer_name, layer_number = layer_data.layer_number, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company"))
             session.add(new_layer)
             session.commit()
             return {"result": 1, "id": new_layer.id, "layer_name": new_layer.layer_name, "layer_number": new_layer.layer_number, "company_id": new_layer.company_id} 
+
+
+class AddGroupData(BaseModel):
+    group_name: str
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "group_name": "Z-Promi"
+            }
+        }
+
+#Gruppe hinzufügen
+@app.post("/groups/") 
+def post_layers(group_data: AddGroupData):
+    with dbm.create_session() as session:
+        existing_group = session.query(Group).filter(
+                Group.group_data == group_data.group_name
+            )
+        if existing_group.count() > 0:
+            return {"result": 0}
+        else:
+            new_group = Group(id = None, group_name = group_data.group_name)
+            session.add(new_group)
+            session.commit()
+            return {"result": 1, "id": new_group.id, "group_name": new_group.group_name} 
+
+
+#Alle Gruppen abrufen
+@app.get("/groups/") 
+def get_groups():
+    with dbm.create_session() as session:
+        allgroups = session.query(Group).all()
+            
+        return allgroups
+
+
+#Alle User in einem Layer abfragen
+
+#Alle Gruppen unter einem gegebenen Layer abrufen
+
+#Audit: Muss noch genauer spezifiziert werden
+
+#Offene Audits für eine User
+
+#Get all Questions
+
+#Frage erstellen
+
+#Fragenantworten
+
+#Neues (spontanes) Audit erstellen
+
+#Alle Audits abfragen
+
+#Audit durchführen
+
+#Geplantes Audit / Rhytmus / Reccurence erstellen
+
+#Geplante Audits / Rhytmus abfragen
+
+#Aktuelle Aufgaben
+
+
+
+
+
 

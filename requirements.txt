@@ -5,3 +5,5 @@ databases[postgresql]
 psycopg2-binary
 passlib
 sqlalchemy
+numpy
+pandas

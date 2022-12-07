@@ -5,13 +5,16 @@ from fastapi import HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jwt import DecodeError
 
+
 from config import JWT_SECRET, JWT_ALGORITHM
 
 
-def sign_jwt(user_id: str):
+def sign_jwt(user_id: str, user_company: int, user_role: str):
     payload = {
         "user_id": user_id,
-        "expires": time.time() + 600
+        "expires": time.time() + 600,
+        "company": user_company,
+        "role": user_role
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token

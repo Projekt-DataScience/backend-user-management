@@ -1,7 +1,7 @@
-FROM python:3.10.0-alpine
+FROM python:3.10-bullseye
 COPY requirements.txt requirements.txt
-RUN apk add --update libpq-dev
-RUN apk add --update git
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install libpq-dev git
 COPY lib/backend-db-lib/ /lib/backend-db-lib/
 RUN pip install -e /lib/backend-db-lib/
 RUN pip install -r requirements.txt
