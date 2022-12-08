@@ -72,6 +72,11 @@ def get_layers(authorization: str | None = Header(default=None)):
 def json_encoder_layer(layer):
     return {"id":layer.id, "name":layer.layer_name}
 
+
+#User einem Layer hinzufügen
+
+#User einer Gruppe hinzufügen
+
 class AddLayerData(BaseModel):
     layer_name: str
     layer_number: int
@@ -83,10 +88,6 @@ class AddLayerData(BaseModel):
                 "layer_number": 0
             }
         }
-#User einem Layer hinzufügen
-
-#User einer Gruppe hinzufügen
-
 
 #Layer hinzufügen
 @app.post("/layers/") 
@@ -94,6 +95,7 @@ def post_layers(layer_data: AddLayerData, authorization: str | None = Header(def
     with dbm.create_session() as session:
         existing_layer = session.query(Layer).filter(
                 Layer.layer_name == layer_data.layer_name
+                and Layer.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
             )
         if existing_layer.count() > 0:
             return {"result": 0}
@@ -120,6 +122,7 @@ def post_groups(group_data: AddGroupData, authorization: str | None = Header(def
     with dbm.create_session() as session:
         existing_group = session.query(Group).filter(
                 Group.group_name == group_data.group_name
+                and Group.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
             )
         if existing_group.count() > 0:
             return {"result": 0}
