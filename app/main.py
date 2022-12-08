@@ -58,25 +58,74 @@ def login_user(login_data: LoginData):
             return LoginDataResponse(result=0, token=None)
 
 #Logout
+@app.post("/logout/") 
+def logout_user(authorization: str | None = Header(default=None)):
+    uid = decode_jwt(authorization.replace("Bearer", "").strip()).get("user_id")
+    with dbm.create_session() as session:
+        user = session.query(User).where(User.id == uid)
+    return {"result": 1, "first_name" : user.first().first_name, "last_name": user.first().last_name}
+
+
+
 
 #Layer abfragen
 @app.get("/layers/") 
 def get_layers(authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
-        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
         alllayers = session.query(Layer).where(Layer.company_id == cid).all()
-        return alllayers
+        return {"result": 1, "data": alllayers}
 
-
-
-def json_encoder_layer(layer):
-    return {"id":layer.id, "name":layer.layer_name}
 
 
 #User einem Layer hinzufügen
+class AddLayerToUser(BaseModel):
+    layer_id: int
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "layer_id": 2
+            }
+        }
+
+
+@app.post("/user/layer/")
+def post_user_layer(user_layer_data: AddLayerToUser, authorization: str | None = Header(default=None)):
+    with dbm.create_session() as session:
+        uid = decode_jwt(authorization.replace("Bearer", "").strip()).get("user_id")
+        user = session.query(User).filter(User.id == uid)
+        session.query(User).filter(User.id == user.first().id).update({'layer_id': user_layer_data.layer_id})
+        session.commit()
+
+    return {"result": 1, "id": user.first().id, "first_name" : user.first().first_name, "last_name": user.first().last_name, "email": user.first().email,  "profile_picture_url": user.first().profile_picture_url, "supervisor_id": user.first().supervisor_id, "layer_id": user.first().layer_id, "company_id": user.first().company_id, "group_id": user.first().group_id}
+    
+
 
 #User einer Gruppe hinzufügen
+class AddLayerToGroup(BaseModel):
+    group_id: int
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "group_id": 2
+            }
+        }
+
+@app.post("/user/group/")
+def post_user_group(user_group_data: AddLayerToGroup, authorization: str | None = Header(default=None)):
+    with dbm.create_session() as session:
+        uid = decode_jwt(authorization.replace("Bearer", "").strip()).get("user_id")
+        user = session.query(User).filter(User.id == uid)
+        session.query(User).filter(User.id == user.first().id).update({'group_id': user_group_data.group_id})
+        session.commit()
+
+    return {"result": 1, "id": user.first().id, "first_name" : user.first().first_name, "last_name": user.first().last_name, "email": user.first().email, "profile_picture_url": user.first().profile_picture_url, "supervisor_id": user.first().supervisor_id, "layer_id": user.first().layer_id, "company_id": user.first().company_id, "group_id": user.first().group_id}
+
+
+
+#Layer hinzufügen
 class AddLayerData(BaseModel):
     layer_name: str
     layer_number: int
@@ -89,23 +138,24 @@ class AddLayerData(BaseModel):
             }
         }
 
-#Layer hinzufügen
+
 @app.post("/layers/") 
 def post_layers(layer_data: AddLayerData, authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
         existing_layer = session.query(Layer).filter(
                 Layer.layer_name == layer_data.layer_name
-                and Layer.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
+                and Layer.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
             )
         if existing_layer.count() > 0:
             return {"result": 0}
         else:
-            new_layer = Layer(id = None, layer_name = layer_data.layer_name, layer_number = layer_data.layer_number, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company"))
+            new_layer = Layer(id = None, layer_name = layer_data.layer_name, layer_number = layer_data.layer_number, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id"))
             session.add(new_layer)
             session.commit()
             return {"result": 1, "id": new_layer.id, "layer_name": new_layer.layer_name, "layer_number": new_layer.layer_number, "company_id": new_layer.company_id} 
 
 
+#Gruppe hinzufügen
 class AddGroupData(BaseModel):
     group_name: str
 
@@ -116,18 +166,18 @@ class AddGroupData(BaseModel):
             }
         }
 
-#Gruppe hinzufügen
+
 @app.post("/groups/") 
 def post_groups(group_data: AddGroupData, authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
         existing_group = session.query(Group).filter(
                 Group.group_name == group_data.group_name
-                and Group.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
+                and Group.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
             )
         if existing_group.count() > 0:
             return {"result": 0}
         else:
-            new_group = Group(id = None, group_name = group_data.group_name, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company"))
+            new_group = Group(id = None, group_name = group_data.group_name, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id"))
             session.add(new_group)
             session.commit()
             return {"result": 1, "id": new_group.id, "group_name": new_group.group_name, "company_id": new_group.company_id} 
@@ -137,15 +187,30 @@ def post_groups(group_data: AddGroupData, authorization: str | None = Header(def
 @app.get("/groups/") 
 def get_groups(authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
-        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company")
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
         allgroups = session.query(Group).where(Group.company_id == cid).all()
             
-        return allgroups
+        return {"result": 1, "data": allgroups}
 
 
 #Alle User in einem Layer abfragen
+@app.get("/groups/{group_id}") 
+def get_users_group(group_id: int, authorization: str | None = Header(default=None)):
+    with dbm.create_session() as session:
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+        alluser = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.group_id == group_id).all()
+            
+        return {"result": 1, "data": alluser}
 
 #Alle Gruppen unter einem gegebenen Layer abrufen
+# @app.get("/groupsinlayer/{layer_id}") 
+# def get_users_group(group_id: int, authorization: str | None = Header(default=None)):
+#     with dbm.create_session() as session:
+#         cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+#         allgroups = session.query(Group, Layer, ).where(Group.company_id == cid).where(Group.layer_id == group_id).all()
+            
+#         return {"result": 1, "data": allgroups}
+
 
 #Audit: Muss noch genauer spezifiziert werden
 

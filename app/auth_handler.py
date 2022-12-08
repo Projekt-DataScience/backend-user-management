@@ -13,7 +13,7 @@ def sign_jwt(user_id: str, user_company: int, user_role: str):
     payload = {
         "user_id": user_id,
         "expires": time.time() + 600,
-        "company": user_company,
+        "company_id": user_company,
         "role": user_role
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
