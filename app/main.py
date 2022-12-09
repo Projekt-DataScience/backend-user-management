@@ -244,29 +244,34 @@ def get_users_group(group_id: int, authorization: str | None = Header(default=No
             
         return {"result": 1, "data": alluser}
 
-#Alle Vorgesetzten einer Gruppe
-@app.get("/groups/supervisor/{group_id}/{assigned_layer_id}/{audit_layer_id}") 
-def get_group_supervisor(group_id: int, assigned_layer_id: int, audit_layer_id: int ,authorization: str | None = Header(default=None)):
-    with dbm.create_session() as session:
-        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
-        if (assigned_layer_id == audit_layer_id):
-            supervisors = session.query(User).where(User.layer_id == assigned_layer_id).all()
-            return {"result": 1, "data": supervisors}
-        else:
-            #assigned_layer_number = session.query(Layer.Layer_number).where(Layer.id == assigned_layer_id)
-            audit_layer_number = session.query(Layer.layer_number).where(Layer.id == audit_layer_id).first()
+#(Idee: Alle Vorgesetzten einer Gruppe), hier anfänglich umgesetzt, funktioniert noch nicht ganz
+# @app.get("/groups/supervisor/{group_id}/{assigned_layer_id}/{audit_layer_id}") 
+# def get_group_supervisor(group_id: int, assigned_layer_id: int, audit_layer_id: int ,authorization: str | None = Header(default=None)):
+#     with dbm.create_session() as session:
+#         cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+#         if (assigned_layer_id == audit_layer_id):
+#             supervisors = session.query(User).where(User.layer_id == assigned_layer_id).all()
+#             return {"result": 1, "data": supervisors}
+#         else:
+#             #assigned_layer_number = session.query(Layer.Layer_number).where(Layer.id == assigned_layer_id)
+#             audit_layer_number = session.query(Layer.layer_number).where(Layer.id == audit_layer_id).first()
 
-            employee = session.query(User).where(User.group_id == group_id).where(User.layer_id == assigned_layer_id).first()
-            for i in range(audit_layer_number.layer_number-1): #Zweihöchste Layer
-                if (i == audit_layer_number.layer_number-1): #Letzter durchlauf
-                    employee = session.query(User).where(User.id == employee.supervisor_id)
-                    return {"result": 1, "data": employee}
-                else:
-                    employee = session.query(User).where(User.id == employee.supervisor_id).first()
+#             employee = session.query(User).where(User.group_id == group_id).where(User.layer_id == assigned_layer_id).first()
+#             for i in range(audit_layer_number.layer_number-1): #Zweihöchste Layer
+#                 if (i == audit_layer_number.layer_number-1): #Letzter durchlauf
+#                     employee = session.query(User).where(User.id == employee.supervisor_id)
+#                     return {"result": 1, "data": employee}
+#                 else:
+#                     employee = session.query(User).where(User.id == employee.supervisor_id).first()
             #return {"result": 1, "data": employee}
             
-
-
+#Alle nutzer vom Audit Layer zurückgeben
+@app.get("/groups/supervisor/{audit_layer_id}") 
+def get_group_supervisor(audit_layer_id: int ,authorization: str | None = Header(default=None)):
+    with dbm.create_session() as session:
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+        useroflayer = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.layer_id == audit_layer_id).all()
+        return {"result": 1, "data": useroflayer}
 
 
 #Audit: Muss noch genauer spezifiziert werden
