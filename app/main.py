@@ -188,6 +188,42 @@ def post_groups(group_data: AddGroupData, authorization: str | None = Header(def
             session.commit()
             return {"result": 1, "id": new_group.id, "group_name": new_group.group_name, "company_id": new_group.company_id} 
 
+#User hinzufügen
+# class AddUserData(BaseModel):
+#     group_name: str
+
+#     class Config:
+#         schema_extra = {
+#             "example": {
+#                 "first_name" : "Franz", 
+#                 "last_name": "Hans", 
+#                 "email": "franzhand@xzy.de", 
+#                 "profile_picture_url": None, 
+#                 "supervisor_id": 2, 
+#                 "layer_id": 1, 
+#                 "company_id": 1, 
+#                 "group_id": 1, 
+#                 "role_id": 1
+
+#             }
+#         }
+
+
+# @app.post("/groups/") 
+# def post_groups(group_data: AddGroupData, authorization: str | None = Header(default=None)):
+#     with dbm.create_session() as session:
+#         existing_group = session.query(Group).filter(
+#                 Group.group_name == group_data.group_name
+#                 and Group.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+#             )
+#         if existing_group.count() > 0:
+#             return {"result": 0}
+#         else:
+#             new_group = Group(id = None, group_name = group_data.group_name, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id"))
+#             session.add(new_group)
+#             session.commit()
+#             return {"result": 1, "id": new_group.id, "group_name": new_group.group_name, "company_id": new_group.company_id} 
+
 
 #Alle Gruppen abrufen
 @app.get("/groups/") 
@@ -207,6 +243,30 @@ def get_users_group(group_id: int, authorization: str | None = Header(default=No
         alluser = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.group_id == group_id).all()
             
         return {"result": 1, "data": alluser}
+
+#Alle Vorgesetzten einer Gruppe
+@app.get("/groups/supervisor/{group_id}/{assigned_layer_id}/{audit_layer_id}") 
+def get_group_supervisor(group_id: int, assigned_layer_id: int, audit_layer_id: int ,authorization: str | None = Header(default=None)):
+    with dbm.create_session() as session:
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+        if (assigned_layer_id == audit_layer_id):
+            supervisors = session.query(User).where(User.layer_id == assigned_layer_id).all()
+            return {"result": 1, "data": supervisors}
+        else:
+            #assigned_layer_number = session.query(Layer.Layer_number).where(Layer.id == assigned_layer_id)
+            audit_layer_number = session.query(Layer.layer_number).where(Layer.id == audit_layer_id).first()
+
+            employee = session.query(User).where(User.group_id == group_id).where(User.layer_id == assigned_layer_id).first()
+            for i in range(audit_layer_number.layer_number-1): #Zweihöchste Layer
+                if (i == audit_layer_number.layer_number-1): #Letzter durchlauf
+                    employee = session.query(User).where(User.id == employee.supervisor_id)
+                    return {"result": 1, "data": employee}
+                else:
+                    employee = session.query(User).where(User.id == employee.supervisor_id).first()
+            #return {"result": 1, "data": employee}
+            
+
+
 
 
 #Audit: Muss noch genauer spezifiziert werden
