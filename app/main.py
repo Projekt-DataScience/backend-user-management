@@ -90,15 +90,18 @@ class AddLayerToUser(BaseModel):
         }
 
 
-@app.post("/user/layer/")
-def post_user_layer(user_layer_data: AddLayerToUser, authorization: str | None = Header(default=None)):
+@app.post("/user/layer/{user_id}")
+def post_user_layer(user_id: int, user_layer_data: AddLayerToUser, authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
-        uid = decode_jwt(authorization.replace("Bearer", "").strip()).get("user_id")
-        user = session.query(User).filter(User.id == uid)
-        session.query(User).filter(User.id == user.first().id).update({'layer_id': user_layer_data.layer_id})
-        session.commit()
+        urole = decode_jwt(authorization.replace("Bearer", "").strip()).get("role")
+        if (urole != "ceo" and urole != "admin"):
+            return {"result": 0, "Reason": "No Permission"}
+        else:
+            user = session.query(User).filter(User.id == user_id)
+            session.query(User).filter(User.id == user.first().id).update({'layer_id': user_layer_data.layer_id})
+            session.commit()
 
-    return {"result": 1, "id": user.first().id, "first_name" : user.first().first_name, "last_name": user.first().last_name, "email": user.first().email,  "profile_picture_url": user.first().profile_picture_url, "supervisor_id": user.first().supervisor_id, "layer_id": user.first().layer_id, "company_id": user.first().company_id, "group_id": user.first().group_id}
+    return {"result": 1, "id": user.first().id, "first_name" : user.first().first_name, "last_name": user.first().last_name, "email": user.first().email,  "profile_picture_url": user.first().profile_picture_url, "supervisor_id": user.first().supervisor_id, "layer_id": user.first().layer_id, "company_id": user.first().company_id, "group_id": user.first().group_id, "role_id": user.first().role_id}
     
 
 
@@ -113,15 +116,18 @@ class AddLayerToGroup(BaseModel):
             }
         }
 
-@app.post("/user/group/")
-def post_user_group(user_group_data: AddLayerToGroup, authorization: str | None = Header(default=None)):
+@app.post("/user/group/{user_id}")
+def post_user_group(user_id: int, user_group_data: AddLayerToGroup, authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
-        uid = decode_jwt(authorization.replace("Bearer", "").strip()).get("user_id")
-        user = session.query(User).filter(User.id == uid)
-        session.query(User).filter(User.id == user.first().id).update({'group_id': user_group_data.group_id})
-        session.commit()
+        urole = decode_jwt(authorization.replace("Bearer", "").strip()).get("role")
+        if (urole != "ceo" and urole != "admin"):
+            return {"result": 0, "Reason": "No Permission"}
+        else:
+            user = session.query(User).filter(User.id == user_id)
+            session.query(User).filter(User.id == user.first().id).update({'group_id': user_group_data.group_id})
+            session.commit()
 
-    return {"result": 1, "id": user.first().id, "first_name" : user.first().first_name, "last_name": user.first().last_name, "email": user.first().email, "profile_picture_url": user.first().profile_picture_url, "supervisor_id": user.first().supervisor_id, "layer_id": user.first().layer_id, "company_id": user.first().company_id, "group_id": user.first().group_id}
+    return {"result": 1, "id": user.first().id, "first_name" : user.first().first_name, "last_name": user.first().last_name, "email": user.first().email, "profile_picture_url": user.first().profile_picture_url, "supervisor_id": user.first().supervisor_id, "layer_id": user.first().layer_id, "company_id": user.first().company_id, "group_id": user.first().group_id, "role_id": user.first().role_id}
 
 
 
@@ -201,15 +207,6 @@ def get_users_group(group_id: int, authorization: str | None = Header(default=No
         alluser = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.group_id == group_id).all()
             
         return {"result": 1, "data": alluser}
-
-#Alle Gruppen unter einem gegebenen Layer abrufen
-# @app.get("/groupsinlayer/{layer_id}") 
-# def get_users_group(group_id: int, authorization: str | None = Header(default=None)):
-#     with dbm.create_session() as session:
-#         cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
-#         allgroups = session.query(Group, Layer, ).where(Group.company_id == cid).where(Group.layer_id == group_id).all()
-            
-#         return {"result": 1, "data": allgroups}
 
 
 #Audit: Muss noch genauer spezifiziert werden
