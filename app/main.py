@@ -189,40 +189,54 @@ def post_groups(group_data: AddGroupData, authorization: str | None = Header(def
             return {"result": 1, "id": new_group.id, "group_name": new_group.group_name, "company_id": new_group.company_id} 
 
 #User hinzufügen
-# class AddUserData(BaseModel):
-#     group_name: str
+class AddUserData(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    password_hash: str
+    supervisor_id: int
+    role_id: int
+    layer_id: int
+    company_id: int
+    group_id: int
 
-#     class Config:
-#         schema_extra = {
-#             "example": {
-#                 "first_name" : "Franz", 
-#                 "last_name": "Hans", 
-#                 "email": "franzhand@xzy.de", 
-#                 "profile_picture_url": None, 
-#                 "supervisor_id": 2, 
-#                 "layer_id": 1, 
-#                 "company_id": 1, 
-#                 "group_id": 1, 
-#                 "role_id": 1
+    class Config:
+        schema_extra = {
+            "example": {
+                "first_name" : "Franz", 
+                "last_name": "Hans", 
+                "email": "franzhand@xzy.de", 
+                "password_hash": "test",
+                "supervisor_id": 2, 
+                "layer_id": 1, 
+                "company_id": 1, 
+                "group_id": 1, 
+                "role_id": 1
 
-#             }
-#         }
+            }
+        }
 
+@app.post("/register/") 
+def post_groups(user_data: AddUserData):
+    with dbm.create_session() as session:
+        existing_user = session.query(User).filter(
+                User.email == user_data.email
+            )
+        if existing_user.count() > 0:
+            return {"result": 0, "Reason": "Email registered"}
+        else:
+            new_user = User(id = None, first_name = user_data.first_name, last_name = user_data.last_name, email = user_data.email, password = User.generate_hash(user_data.password_hash), profile_picture_url = None, supervisor_id = user_data.supervisor_id, layer_id = user_data.layer_id, company_id = user_data.company_id, group_id = user_data.group_id, role_id = user_data.role_id)
+            session.add(new_user)
+            session.commit()
+            return {"result": 1, "id": new_user.id, "first_name": new_user.first_name, "last_name": new_user.last_name} 
 
-# @app.post("/groups/") 
-# def post_groups(group_data: AddGroupData, authorization: str | None = Header(default=None)):
-#     with dbm.create_session() as session:
-#         existing_group = session.query(Group).filter(
-#                 Group.group_name == group_data.group_name
-#                 and Group.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
-#             )
-#         if existing_group.count() > 0:
-#             return {"result": 0}
-#         else:
-#             new_group = Group(id = None, group_name = group_data.group_name, company_id = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id"))
-#             session.add(new_group)
-#             session.commit()
-#             return {"result": 1, "id": new_group.id, "group_name": new_group.group_name, "company_id": new_group.company_id} 
+# Get user info
+@app.get("/user/{user_id}") 
+def get_users_group(user_id: int):
+    with dbm.create_session() as session:
+        userinfo = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.id == user_id).all()
+            
+        return {"result": 1, "data": userinfo}
 
 
 #Alle Gruppen abrufen
@@ -272,6 +286,13 @@ def get_group_supervisor(audit_layer_id: int ,authorization: str | None = Header
         cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
         useroflayer = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.layer_id == audit_layer_id).all()
         return {"result": 1, "data": useroflayer}
+
+@app.get("/groups/employee/{group_id}/{audit_layer_id}") 
+def get_group_employee(group_id: int, audit_layer_id: int ,authorization: str | None = Header(default=None)):
+    with dbm.create_session() as session:
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+        employeesofgroupandlayer = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.layer_id == audit_layer_id).where(User.group_id == group_id).all()
+        return {"result": 1, "data": employeesofgroupandlayer}
 
 
 #Audit: Muss noch genauer spezifiziert werden
