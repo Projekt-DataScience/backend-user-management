@@ -1,6 +1,6 @@
 # backend-user_management
 
-# Startint dev environment
+# Starting dev environment
 
 1. Start the docker images:
 
