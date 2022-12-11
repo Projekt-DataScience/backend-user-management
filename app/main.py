@@ -14,7 +14,8 @@ import pandas as pd
 
 dbm = DatabaseManager(base, DATABASE_URL)
 app = FastAPI(docs_url="/api/user_management/docs",
-              redoc_url="/api/user_management/redoc")
+              redoc_url="/api/user_management/redoc",
+              openapi_url="/api/user_management/openapi.json")
 
 
 @app.get("/api/user_management/test/")
