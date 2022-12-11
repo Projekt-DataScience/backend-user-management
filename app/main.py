@@ -1,4 +1,5 @@
 import os
+import uvicorn
 from typing import Union
 
 from fastapi import FastAPI, Depends, Header
@@ -322,3 +323,5 @@ def get_group_employee(group_id: int, audit_layer_id: int ,authorization: str | 
 
 
 
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
