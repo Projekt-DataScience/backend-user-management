@@ -12,7 +12,7 @@ from config import JWT_SECRET, JWT_ALGORITHM
 def sign_jwt(user_id: str, user_company: int, user_role: str):
     payload = {
         "user_id": user_id,
-        "expires": time.time() + 600,
+        "expires": time.time() + 20000,
         "company_id": user_company,
         "role": user_role
     }
