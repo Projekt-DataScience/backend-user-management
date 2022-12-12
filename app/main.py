@@ -303,7 +303,7 @@ def get_users_group(group_id: int, authorization: str | None = Header(default=No
         # return {"result": 1, "data": employee}
 
 #Alle Employees vom Audit Layer zurückgeben
-@app.get("/groups/employee/{group_id}/{audit_layer_id}") 
+@app.get("/api/user_management/groups/employee/{group_id}/{audit_layer_id}") 
 def get_group_employee(group_id: int, audit_layer_id: int ,authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
         cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
