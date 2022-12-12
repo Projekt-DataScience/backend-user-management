@@ -5,8 +5,7 @@ services:
     build: .
     volumes:
       - ./:/code
-    working_dir: /code/app
-    command: uvicorn main:app --host 0.0.0.0 --reload --port 8001
+    command: python /code/app/main.py
     ports:
       - "8001:8001"
     expose:
@@ -14,6 +13,37 @@ services:
     networks:
       - microservice-network
 
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: backendgang
+      POSTGRES_PASSWORD: backendgang
+      POSTGRES_DB: backend
+      PGPORT: 8010
+    ports:
+      - "8010:8010"
+    networks:
+      - microservice-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-manager:
+    image: dpage/pgadmin4:latest
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: backend@backend.xyz
+      PGADMIN_DEFAULT_PASSWORD: backend
+    ports:
+      - 8080:80
+    networks:
+      - microservice-network
+
 networks:
   microservice-network:
-    external: true
