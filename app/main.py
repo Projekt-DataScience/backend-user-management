@@ -287,6 +287,7 @@ def get_group_supervisor(audit_layer_id: int ,authorization: str | None = Header
         useroflayer = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.layer_id == audit_layer_id).all()
         return {"result": 1, "data": useroflayer}
 
+#Alle Employees vom Audit Layer zurückgeben
 @app.get("/groups/employee/{group_id}/{audit_layer_id}") 
 def get_group_employee(group_id: int, audit_layer_id: int ,authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
