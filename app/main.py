@@ -14,7 +14,8 @@ import pandas as pd
 
 dbm = DatabaseManager(base, DATABASE_URL)
 app = FastAPI(docs_url="/api/user_management/docs",
-              redoc_url="/api/user_management/redoc")
+              redoc_url="/api/user_management/redoc",
+              openapi_url="/api/user_management/openapi.json")
 
 
 @app.get("/api/user_management/test/")
@@ -301,7 +302,13 @@ def get_users_group(group_id: int, authorization: str | None = Header(default=No
 #                     employee = session.query(User).where(User.id == employee.supervisor_id).first()
         # return {"result": 1, "data": employee}
 
-# Alle nutzer vom Audit Layer zurückgeben
+#Alle Employees vom Audit Layer zurückgeben
+@app.get("/api/user_management/groups/employee/{group_id}/{audit_layer_id}") 
+def get_group_employee(group_id: int, audit_layer_id: int ,authorization: str | None = Header(default=None)):
+    with dbm.create_session() as session:
+        cid = decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
+        employeesofgroupandlayer = session.query(User.id, User.first_name, User.last_name, User.email, User.profile_picture_url, User.role_id, User.group_id, User.supervisor_id, User.layer_id, User.company_id).where(User.company_id == cid).where(User.layer_id == audit_layer_id).where(User.group_id == group_id).all()
+        return {"result": 1, "data": employeesofgroupandlayer}
 
 
 @app.get("/api/user_management/groups/supervisor/{audit_layer_id}")
