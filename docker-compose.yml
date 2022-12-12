@@ -6,6 +6,9 @@ services:
     volumes:
       - ./:/code
     command: python /code/app/main.py
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8001:8001"
     expose:
