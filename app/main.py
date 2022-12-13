@@ -295,11 +295,11 @@ def get_users_group(user_id: int):
     with dbm.create_session() as session:
         userinfo = session.query(User).where(User.id == user_id).first()
 
-        if userinfo.first().supervisor_id != None:
+        if userinfo.supervisor_id != None:
             userinfo.supervisorid = session.query(User).get(userinfo.supervisor_id).id
             userinfo.supervisorlast_name = session.query(User).get(userinfo.supervisor_id).last_name
             userinfo.supervisorfirst_name = session.query(User).get(userinfo.supervisor_id).first_name
-            
+
         userinfo.company = session.query(Company).get(userinfo.company_id)
         userinfo.role = session.query(Role).get(userinfo.role_id)
         userinfo.group = session.query(Group).get(userinfo.group_id)
