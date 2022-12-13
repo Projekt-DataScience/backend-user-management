@@ -120,15 +120,21 @@ def post_user_layer(user_id: int, user_layer_data: AddLayerToUser, authorization
                 {'layer_id': user_layer_data.layer_id})
             session.commit()
 
-            supervisorid = session.query(User).get(user.first().supervisor_id).supervisor_id
-            supervisorlast_name = session.query(User).get(user.first().supervisor_id).last_name
-            supervisorfirst_name = session.query(User).get(user.first().supervisor_id).first_name
+            if user.first().supervisor_id != None:
+                supervisorid = session.query(User).get(user.first().supervisor_id).id
+                supervisorlast_name = session.query(User).get(user.first().supervisor_id).last_name
+                supervisorfirst_name = session.query(User).get(user.first().supervisor_id).first_name
+            else:
+                supervisorid = None
+                supervisorlast_name = None
+                supervisorfirst_name = None
+
             company = session.query(Company).get(user.first().company_id)
             role = session.query(Role).get(user.first().role_id)
             group = session.query(Group).get(user.first().group_id)
             layer = session.query(Layer).get(user.first().layer_id)
 
-    return {"result": 1, "id": user.first().id, "first_name": user.first().first_name, "last_name": user.first().last_name, "email": user.first().email,  "profile_picture_url": user.first().profile_picture_url, "supervisor": {"supervisorid": supervisorid, "last_name": supervisorlast_name, "last_name": supervisorlast_name}, "layer": layer,"company": company, "group": group, "role": role}
+    return {"result": 1, "id": user.first().id, "first_name": user.first().first_name, "last_name": user.first().last_name, "email": user.first().email,  "profile_picture_url": user.first().profile_picture_url, "supervisor": {"supervisorid": supervisorid, "first_name": supervisorfirst_name, "last_name": supervisorlast_name, "last_name": supervisorlast_name}, "layer": layer,"company": company, "group": group, "role": role}
 
 
 # User einer Gruppe hinzufügen
@@ -156,9 +162,15 @@ def post_user_group(user_id: int, user_group_data: AddLayerToGroup, authorizatio
                 {'group_id': user_group_data.group_id})
             session.commit()
 
-            supervisorid = session.query(User).get(user.first().supervisor_id).supervisor_id
-            supervisorlast_name = session.query(User).get(user.first().supervisor_id).last_name
-            supervisorfirst_name = session.query(User).get(user.first().supervisor_id).first_name
+            if user.first().supervisor_id != None:
+                supervisorid = session.query(User).get(user.first().supervisor_id).id
+                supervisorlast_name = session.query(User).get(user.first().supervisor_id).last_name
+                supervisorfirst_name = session.query(User).get(user.first().supervisor_id).first_name
+            else:
+                supervisorid = None
+                supervisorlast_name = None
+                supervisorfirst_name = None
+
             company = session.query(Company).get(user.first().company_id)
             role = session.query(Role).get(user.first().role_id)
             group = session.query(Group).get(user.first().group_id)
@@ -263,7 +275,7 @@ class AddUserData(BaseModel):
 
 
 @app.post("/api/user_management/register/")
-def post_groups(user_data: AddUserData):
+def register(user_data: AddUserData):
     with dbm.create_session() as session:
         existing_user = session.query(User).filter(
             User.email == user_data.email
@@ -316,7 +328,7 @@ def get_groups(authorization: str | None = Header(default=None)):
 
 # Alle User in einem Layer abfragen
 @app.get("/api/user_management/group/{group_id}")
-def get_users_group(group_id: int, authorization: str | None = Header(default=None)):
+def get_users_group_id(group_id: int, authorization: str | None = Header(default=None)):
     with dbm.create_session() as session:
         cid = decode_jwt(authorization.replace(
             "Bearer", "").strip()).get("company_id")
