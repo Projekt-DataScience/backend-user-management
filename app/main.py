@@ -2,7 +2,7 @@ import os
 import uvicorn
 from typing import Union
 
-from fastapi import FastAPI, Depends, Header
+from fastapi import FastAPI, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 from config import DATABASE_URL
@@ -78,7 +78,7 @@ def validate_user(jwt: str):
     if userinfo is not None: 
         return {"result": 1, "payload": userinfo}
     else:
-        return {"result": 0, "Reason": "JWT not valid"}
+        raise HTTPException(status_code=404, detail="JWT not valid")
 
 
 # Layer abfragen
@@ -113,7 +113,7 @@ def post_user_layer(user_id: int, user_layer_data: AddLayerToUser, authorization
         urole = decode_jwt(authorization.replace(
             "Bearer", "").strip()).get("role")
         if (urole != "ceo" and urole != "admin"):
-            return {"result": 0, "Reason": "No Permission"}
+            raise HTTPException(status_code=404, detail="No Permission")
         else:
             user = session.query(User).filter(User.id == user_id)
             session.query(User).filter(User.id == user.first().id).update(
@@ -155,7 +155,7 @@ def post_user_group(user_id: int, user_group_data: AddLayerToGroup, authorizatio
         urole = decode_jwt(authorization.replace(
             "Bearer", "").strip()).get("role")
         if (urole != "ceo" and urole != "admin"):
-            return {"result": 0, "Reason": "No Permission"}
+            raise HTTPException(status_code=404, detail="No Permission")
         else:
             user = session.query(User).filter(User.id == user_id)
             session.query(User).filter(User.id == user.first().id).update(
@@ -201,7 +201,7 @@ def post_layers(layer_data: AddLayerData, authorization: str | None = Header(def
             and Layer.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
         )
         if existing_layer.count() > 0:
-            return {"result": 0, "Reason": "Layer already exists in the Company"}
+            raise HTTPException(status_code=404, detail="Layer already exists in the Company")
         else:
             new_layer = Layer(id=None, layer_name=layer_data.layer_name, layer_number=layer_data.layer_number,
                               company_id=decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id"))
@@ -233,7 +233,8 @@ def post_groups(group_data: AddGroupData, authorization: str | None = Header(def
             and Group.company_id == decode_jwt(authorization.replace("Bearer", "").strip()).get("company_id")
         )
         if existing_group.count() > 0:
-            return {"result": 0, "Reason": "Group already exists in the Company"}
+            raise HTTPException(status_code=404, detail="Group already exists in the Company")
+            
         else:
             new_group = Group(id=None, group_name=group_data.group_name, company_id=decode_jwt(
                 authorization.replace("Bearer", "").strip()).get("company_id"))
@@ -281,7 +282,7 @@ def register(user_data: AddUserData):
             User.email == user_data.email
         )
         if existing_user.count() > 0:
-            return {"result": 0, "Reason": "Email already registered"}
+            raise HTTPException(status_code=404, detail="Email already registered")
         else:
             new_user = User(id=None, first_name=user_data.first_name, last_name=user_data.last_name, email=user_data.email, password=User.generate_hash(user_data.password_hash),
                             profile_picture_url=None, supervisor_id=user_data.supervisor_id, layer_id=user_data.layer_id, company_id=user_data.company_id, group_id=user_data.group_id, role_id=user_data.role_id)
