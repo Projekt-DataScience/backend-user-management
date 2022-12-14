@@ -78,7 +78,7 @@ def validate_user(jwt: str):
     if userinfo is not None: 
         return {"result": 1, "payload": userinfo}
     else:
-        raise HTTPException(status_code=404, detail="JWT not valid")
+        raise HTTPException(status_code=401, detail="JWT not valid")
 
 
 # Layer abfragen
