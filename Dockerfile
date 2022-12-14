@@ -10,4 +10,4 @@ RUN pip install -r requirements.txt
 
 WORKDIR /code/app
 
-ENTRYPOINT [ "python", "/code/app/main.py" ]
+CMD [ "python", "/code/app/main.py" ]

@@ -7,4 +7,6 @@ passlib
 sqlalchemy
 numpy
 pandas
+httpx 
+pytest
 git+https://github.com/Projekt-DataScience/backend-db-lib@main#egg=backend_db_lib

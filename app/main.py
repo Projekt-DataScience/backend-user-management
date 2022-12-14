@@ -4,6 +4,7 @@ from typing import Union
 
 from fastapi import FastAPI, Depends, Header
 from pydantic import BaseModel
+from fastapi.testclient import TestClient
 
 from config import DATABASE_URL
 from auth_handler import sign_jwt, JWTBearer, decode_jwt
@@ -14,10 +15,12 @@ import json
 import pandas as pd
 
 
+
 dbm = DatabaseManager(base, DATABASE_URL)
 app = FastAPI(docs_url="/api/user_management/docs",
               redoc_url="/api/user_management/redoc",
               openapi_url="/api/user_management/openapi.json")
+client = TestClient(app)
 
 app.add_middleware(
     CORSMiddleware,
