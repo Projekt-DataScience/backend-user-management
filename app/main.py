@@ -54,8 +54,8 @@ def login_user(login_data: LoginData):
     with dbm.create_session() as session:
         # todo: add password hashing
         valid_user = session.query(User).filter(
-            User.email == login_data.email
-            and User.generate_hash(login_data.password) == User.password_hash
+            (User.email == login_data.email)
+            & (User.generate_hash(login_data.password) == User.password_hash)
         )
         if valid_user.count() > 0:
             roleasstring = session.query(Role).get(valid_user.first().role_id)
